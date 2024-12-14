@@ -13,13 +13,15 @@ Motor Lt(-19);
 Controller master(E_CONTROLLER_MASTER);
 MotorGroup left_side_motors({-20, -18,19}); // Creates a motor group with forwards ports 1 & 3 and reversed port 2
 MotorGroup right_side_motors({16,17, -15});  // Creates a motor group with forwards port 5 and reversed ports 4 & 6
-MotorGroup intake_mg({8, 9});
-Motor intakeBottom(9);
-Motor intakeTop(8);
-Optical optical_sensor(4);
-Rotation odomVerticalPod (-2);
-Imu imu (1);
-adi::Pneumatics piston('h', false);
+MotorGroup intake_mg({13, -9});
+Motor intakeBottom(-9);
+Motor intakeTop(13);
+Optical optical_sensor(1);
+Rotation odomVerticalPod (3);
+Imu imu (4);
+adi::Pneumatics piston('h', false);//clamp
+adi::Pneumatics arm('g', false);//arm
+adi::Pneumatics doinker('f', false);//doinker
 
 /**
  * A callback function for LLEMU's center button.
@@ -40,12 +42,12 @@ lemlib::Drivetrain drivetrain{
 };
 
 // define odom pod
-lemlib::TrackingWheel vertical_tracking_wheel(&odomVerticalPod, 2, 0.08);
+lemlib::TrackingWheel vertical_tracking_wheel(&odomVerticalPod, 2, 1);
 // odom struct
 lemlib::OdomSensors sensors(&vertical_tracking_wheel, nullptr, nullptr, nullptr, &imu);
 
 // forward/backward PID
-lemlib::ControllerSettings lateralController(14, // proportional gain (kP)
+lemlib::ControllerSettings lateralController(14.35, // proportional gain (kP)
                                               0, // integral gain (kI)
                                               40, // derivative gain (kD)
                                               0, // anti windup
@@ -70,15 +72,15 @@ lemlib::ControllerSettings lateralController(14, // proportional gain (kP)
      5    // slew rate
 };*/
 
-lemlib::ControllerSettings angularController(3.4, // proportional gain (kP)
-                                              0.8, // integral gain (kI)
-                                              51, // derivative gain (kD)
-                                              3, // anti windup
-                                              1, // small error range, in inches
-                                              100, // small error range timeout, in milliseconds
-                                              3, // large error range, in inches
-                                              500, // large error range timeout, in milliseconds
-                                              20 // maximum acceleration (slew)
+lemlib::ControllerSettings angularController(3, // proportional gain (kP)
+                                              0, // integral gain (kI)
+                                              5, // derivative gain (kD)
+                                              0, // anti windup
+                                              0, // small error range, in inches
+                                              0, // small error range timeout, in milliseconds
+                                              0, // large error range, in inches
+                                              0, // large error range timeout, in milliseconds
+                                              0 // maximum acceleration (slew)
 );
 
 // create the chassis
@@ -86,6 +88,96 @@ lemlib::Chassis chassis(drivetrain, lateralController, angularController,
                         sensors);
 
 
+void redSideAWP(){
+chassis.setPose(0,0,90);
+   chassis.moveToPose(5,0,90, 1000);//alliance goal
+   delay(1000);
+   doinker.extend();
+   delay(500);
+   chassis.moveToPose(0,0,90, 1000, {.forwards=false});//back up from alliance
+   doinker.retract();
+   piston.extend();
+   chassis.moveToPose(-16.5,39,135, 2500,{.forwards=false});//mobile goal
+  chassis.waitUntilDone();
+   piston.retract();//get mobile goal
+    intake_mg.move(115);
+    delay(500);
+chassis.waitUntilDone();
+chassis.moveToPose(-27,33,270,1900,{.maxSpeed=90});//first set of rings
+chassis.moveToPose(-3,13,90,3000,{.maxSpeed=90});//second set of rings
+delay(500);
+doinker.extend();//hit the wanted ring off
+delay(500);
+ chassis.turnToHeading(50,1000,{.maxSpeed=45});//hit the ring
+ delay(1000);
+ intake_mg.move(115);
+ chassis.moveToPose(11,23,62,500);//go pick up the ring
+ doinker.retract();
+ chassis.moveToPose(9,30,20,500,{.maxSpeed=50});//go to wall
+chassis.moveToPose(9,40,20,500,{.maxSpeed=50});//go to wall x2
+}
+
+void blueSideAwp(){
+ chassis.setPose(0,0,90);
+   chassis.moveToPose(5,0,90, 1000);//alliance goal
+   delay(1000);
+   doinker.extend();
+   delay(500);
+   chassis.moveToPose(0,0,90, 1000, {.forwards=false});//back up from alliance
+   doinker.retract();
+   piston.extend();
+   chassis.moveToPose(-15,39,135, 2500,{.forwards=false});//mobile goal
+  chassis.waitUntilDone();
+   piston.retract();//get mobile goal
+    intake_mg.move(115);
+    delay(500);
+chassis.waitUntilDone();
+chassis.moveToPose(-27,33,270,1900,{.maxSpeed=90});//first set of rings
+chassis.moveToPose(-3,13,90,3000,{.maxSpeed=90});//second set of rings
+delay(500);
+doinker.extend();//hit the wanted ring off
+delay(500);
+ chassis.turnToHeading(50,1000,{.maxSpeed=45});//hit the ring
+ delay(1000);
+ intake_mg.move(115);
+ chassis.moveToPose(11,23,62,500);//go pick up the ring
+ doinker.retract();
+ chassis.moveToPose(15,17,70,500,{.forwards=false,.maxSpeed=60});//go to wall
+chassis.moveToPose(15,30,70,500);
+
+}
+
+void skills(){
+    chassis.setPose(-12,-60,90);
+  /*  chassis.moveToPose(-7,-60,90,1000);//go to alliance stake
+   chassis.waitUntilDone();
+   doinker.extend();
+   delay(500);
+   chassis.moveToPoint(-12,-60, 1000, {.forwards=false});//back up from alliance
+   chassis.waitUntilDone();
+    chassis.moveToPose(-12,-60,150,1000,{.forwards=false});//turn to mobile goal
+   doinker.retract();
+   piston.extend();
+   chassis.moveToPose(-25,-46,150,1000,{.forwards=false,.lead=0.3,.maxSpeed=40});//go to mobile goal
+   chassis.waitUntilDone();
+   delay(1000);
+   piston.retract();
+   intake_mg.move(115);
+   delay(500);
+   chassis.turnToHeading(0,1000);
+   chassis.moveToPose(-24,-30,0,1000);//go to ring
+   chassis.turnToHeading(-45,1000);
+   chassis.moveToPoint(-43,-2,1000,{.maxSpeed=80});//move to coordinate 
+   chassis.moveToPose(-46,13,-15,1300);//move to second ring
+   delay(2000);
+   intake_mg.move(80);
+   chassis.waitUntilDone();
+    chassis.moveToPose(-52,0,-161,2000);//wallstake ring
+    
+    delay(3000);
+   chassis.waitUntilDone();
+   piston.extend();*/
+}
 /**
  * Runs initialization code. This occurs as soon as the program is started.
  *
@@ -144,8 +236,21 @@ void competition_initialize() {}
  */
 
 void autonomous() {
-
+    skills();
     
+
+
+
+// intake_mg.move(115);
+// chassis.waitUntilDone();
+// chassis.moveToPose(18,12,90,5000,{.maxSpeed=90});//second set of rings
+// chassis.waitUntil(12);
+// intake_mg.move(80);
+// chassis.waitUntil(28);
+// intake_mg.move(115);
+// chassis.moveToPose(12,36,0,2000);//touch ladder
+   
+
 	 // set position to x:0, y:0, heading:0
  /*  chassis.setPose(0, 0, 0);
 intake_mg.move(-100);
@@ -222,35 +327,35 @@ intake_mg.move(-100);
 
 //AWP left BLUE
 
-chassis.setPose(0,0,0);
-piston.extend();
-chassis.moveToPose(0,-32,0,1300,{.forwards=false, .maxSpeed = 100});//go to first goal
-chassis.waitUntilDone();
-piston.retract();
-intake_mg.move(-127);
-delay(350);
-chassis.moveToPose(1,-32,90 ,500,{.forwards=true,.maxSpeed=180});//turn towards first set of rings
-intake_mg.move(-110);
-delay(200);//intake preload into goal
-chassis.moveToPose(23,-31,90 ,950,{.forwards=true,.maxSpeed=100});//goes to first set of rings
-delay(2100);
-piston.extend();
-intake_mg.move(-127);
-piston.extend();
-chassis.moveToPose(-17 , -12,  -90, 3000, {.forwards=true,});//goes to second set
-chassis.moveToPose(-30 , -12,  -90, 1300, {.forwards=true, .maxSpeed=95});
-chassis.waitUntil(11);
-intakeTop.move(0);
-chassis.waitUntilDone();
-chassis.turnToHeading(-145,1000);
-chassis.moveToPose(-2 , 0,  -90, 1500, {.forwards=false, .minSpeed = 127});//adjustments go to push ring
-chassis.moveToPose(-22.5, -2,  -90, 1500, {.forwards=true, .maxSpeed=100});// go towards goal
-chassis.turnToHeading(180,500);//turn towards goal
-chassis.moveToPose(-22.5 , 6,  180, 1500, {.forwards=false});//go TO goal
-intake_mg.move(-127);
-delay(1500);
-chassis.moveToPose(-21, -25, 180, 1500, { .forwards = true , .minSpeed = 127});//go to field ladder thingy
-intake_mg.move(0);
+// chassis.setPose(0,0,0);
+// piston.extend();
+// chassis.moveToPose(0,-32,0,1300,{.forwards=false, .maxSpeed = 100});//go to first goal
+// chassis.waitUntilDone();
+// piston.retract();
+// intake_mg.move(-127);
+// delay(350);
+// chassis.moveToPose(1,-32,90 ,500,{.forwards=true,.maxSpeed=180});//turn towards first set of rings
+// intake_mg.move(-110);
+// delay(200);//intake preload into goal
+// chassis.moveToPose(23,-31,90 ,950,{.forwards=true,.maxSpeed=100});//goes to first set of rings
+// delay(2100);
+// piston.extend();
+// intake_mg.move(-127);
+// piston.extend();
+// chassis.moveToPose(-17 , -12,  -90, 3000, {.forwards=true,});//goes to second set
+// chassis.moveToPose(-30 , -12,  -90, 1300, {.forwards=true, .maxSpeed=95});
+// chassis.waitUntil(11);
+// intakeTop.move(0);
+// chassis.waitUntilDone();
+// chassis.turnToHeading(-145,1000);
+// chassis.moveToPose(-2 , 0,  -90, 1500, {.forwards=false, .minSpeed = 127});//adjustments go to push ring
+// chassis.moveToPose(-22.5, -2,  -90, 1500, {.forwards=true, .maxSpeed=100});// go towards goal
+// chassis.turnToHeading(180,500);//turn towards goal
+// chassis.moveToPose(-22.5 , 6,  180, 1500, {.forwards=false});//go TO goal
+// intake_mg.move(-127);
+// delay(1500);
+// chassis.moveToPose(-21, -25, 180, 1500, { .forwards = true , .minSpeed = 127});//go to field ladder thingy
+// intake_mg.move(0);
 
 // }
 
@@ -317,7 +422,9 @@ chassis.moveToPoint(-10, -25, 2000);*/
 
 void opcontrol() {
 
-	bool pstate = false;
+	bool pstate = true;
+    bool astate = true;
+    bool dstate = true;
     int starttime=0;
 	while (true)
 	{
@@ -343,19 +450,19 @@ void opcontrol() {
 		if (master.get_digital(DIGITAL_R1))
 		{
           
-			intake_mg.move(-127);
+			intake_mg.move(115);
             
 		}
 		else if (master.get_digital(DIGITAL_R2))
 		{
-			intake_mg.move(127);
+			intake_mg.move(-115);
 		}
 		else
 		{
 			intake_mg.move(0);
 		}
 
-		if (master.get_digital_new_press(DIGITAL_A)){
+		if (master.get_digital_new_press(DIGITAL_A)){//clamp
 			pstate = !pstate;
 		}
 
@@ -365,6 +472,27 @@ void opcontrol() {
 		else {
 			piston.retract();
 		}
+        if (master.get_digital_new_press(DIGITAL_B)){//ARM
+			astate = !astate;
+		}
+
+		if (astate == false){
+			arm.extend();
+		}
+		else {
+			arm.retract();
+		}
+         if (master.get_digital_new_press(DIGITAL_Y)){//DOINKER
+			dstate = !dstate;
+		}
+
+		if (dstate == false){
+			doinker.extend();
+		}
+		else {
+			doinker.retract();
+		}
+
 		// if (master.get_digital(DIGITAL_A))
 		// {
 		// 	piston.extend();
